@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传 - PicUp图床</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 全局样式 */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #fff;
+            overflow-x: hidden;
+            background-color: #0a0e27;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        /* 容器样式 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 上传卡片 */
+        .upload-card {
+            backdrop-filter: blur(10px);
+            background: rgba(26, 31, 58, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 2rem;
+            width: 100%;
+            max-width: 900px;
+            margin: 2rem auto;
+        }
+        
+        /* 标题样式 */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-center h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .text-center p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+        
+        /* 成功提示 */
+        .bg-green-100 {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* 表单样式 */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* 拖拽区域 */
+        .drop-zone {
+            border: 3px dashed rgba(0, 212, 255, 0.4);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(10, 14, 39, 0.6);
+        }
+        
+        .drop-zone.dragover {
+            border-color: #00d4ff;
+            background-color: rgba(0, 212, 255, 0.1);
+        }
+        
+        .drop-zone i {
+            font-size: 4rem;
+            color: #00d4ff;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .drop-zone p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1rem;
+        }
+        
+        /* 隐藏的文件输入 */
+        #file {
+            display: none;
+        }
+        
+        /* 自定义文件选择按钮 */
+        .cursor-pointer {
+            display: inline-block;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+        
+        .cursor-pointer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* 支持的格式提示 */
+        .text-gray-500 {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* 按钮容器 */
+        .flex {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        /* 主要按钮 */
+        .bg-purple-600 {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+            flex: 1;
+        }
+        
+        .bg-purple-600:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* 次要按钮 */
+        .bg-gray-600 {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+        
+        .bg-gray-600:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 复制链接按钮 */
+        .copy-link-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .copy-link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 640px) {
+            .copy-link-btn {
+                padding: 0.65rem 1.25rem;
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* 已选择文件样式 */
+        #selectedFile {
+            background: rgba(10, 14, 39, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .file-info-icon {
+            font-size: 2rem;
+            color: #00d4ff;
+        }
+        
+        .file-info-details {
+            flex: 1;
+        }
+        
+        .file-info-name {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-info-size {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .remove-file-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .remove-file-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+        
+        /* Toast通知样式 */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast.success {
+            background: rgba(34, 197, 94, 0.8);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #fff;
+        }
+        
+        .toast.error {
+            background: rgba(239, 68, 68, 0.8);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fff;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 640px) {
+            .upload-card {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .drop-zone {
+                padding: 1.5rem;
+            }
+            
+            .drop-zone i {
+                font-size: 3rem;
+            }
+            
+            .flex {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .cursor-pointer {
+                padding: 0.5rem 1.5rem;
+            }
+            
+            /* Toast响应式调整 */
+            .toast {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="upload-card">
+            <div class="text-center">
+                <h1>文件上传</h1>
+                <p>上传您的图片和文件</p>
+            </div>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                            <div class="bg-green-100">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- 上传成功的文件链接显示区域 -->
+            {% if uploaded_file %}
+                <div class="mb-6">
+                    <div class="bg-green-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <strong>上传成功！文件链接：</strong>
+                            </div>
+                            <button type="button" onclick="copyToClipboard('{{ uploaded_file.url }}')" class="copy-link-btn">
+                                <i class="fas fa-copy"></i>复制链接
+                            </button>
+                        </div>
+                        <div class="mt-2 p-2 bg-opacity-20 bg-white rounded-md overflow-x-auto">
+                            <a href="{{ uploaded_file.url }}" target="_blank" rel="noopener noreferrer" class="text-blue-300 hover:underline break-all">{{ uploaded_file.url }}</a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-6">
+                        <label for="file" class="block">选择文件</label>
+                        <div class="drop-zone" id="dropZone" onclick="document.getElementById('file').click()">
+                            <div>
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽文件到此处</p>
+                        </div>
+                        </div>
+                        <input type="file" id="file" name="file" accept="image/*,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx">
+                    </div>
+                
+                <!-- 已选择文件显示区域 -->
+                <div id="selectedFile" class="mb-4"></div>
+                
+                <div class="text-gray-500">
+                    <p>支持的文件格式：图片（PNG、JPG、JPEG）、文档（TXT、DOC、DOCX）、演示文稿（PPT、PPTX）、电子表格（XLS、XLSX）</p>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-upload mr-2"></i>上传文件
+                    </button>
+                    <button type="button" onclick="window.location.href='{{ url_for('records') }}'" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-history mr-2"></i>我的上传记录
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // 文件拖拽功能
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('file');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        
+        // 允许的文件类型
+        const allowedTypes = {
+            'image/png': true,
+            'image/jpeg': true,
+            'image/gif': true,
+            'text/plain': true,
+            'application/msword': true,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+            'application/vnd.ms-powerpoint': true,
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation': true,
+            'application/vnd.ms-excel': true,
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': true
+        };
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+        
+        // 获取文件图标
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) {
+                return '<i class="fas fa-image file-info-icon"></i>';
+            } else if (fileType === 'text/plain') {
+                return '<i class="fas fa-file-alt file-info-icon"></i>';
+            } else if (fileType.startsWith('application/msword') || fileType.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+                return '<i class="fas fa-file-word file-info-icon"></i>';
+            } else if (fileType.startsWith('application/vnd.ms-powerpoint') || fileType.startsWith('application/vnd.openxmlformats-officedocument.presentationml.presentation')) {
+                return '<i class="fas fa-file-powerpoint file-info-icon"></i>';
+            } else if (fileType.startsWith('application/vnd.ms-excel') || fileType.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+                return '<i class="fas fa-file-excel file-info-icon"></i>';
+            } else {
+                return '<i class="fas fa-file file-info-icon"></i>';
+            }
+        }
+        
+        // Toast通知功能
+        function showToast(message, type = 'success') {
+            // 创建Toast元素
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // 设置图标
+            const icon = type === 'success' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+            toast.innerHTML = `${icon} ${message}`;
+            
+            // 添加到页面
+            document.body.appendChild(toast);
+            
+            // 显示Toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // 3秒后隐藏并移除
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // 显示已选择的文件
+        function showSelectedFile(file) {
+            const fileIcon = getFileIcon(file.type);
+            const fileSize = formatFileSize(file.size);
+            
+            selectedFileDiv.innerHTML = `
+                <div class="file-info">
+                    ${fileIcon}
+                    <div class="file-info-details">
+                        <div class="file-info-name" title="${file.name}">${file.name}</div>
+                        <div class="file-info-size">${fileSize}</div>
+                    </div>
+                    <button type="button" class="remove-file-btn" onclick="removeFile()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // 移除已选择的文件
+        function removeFile() {
+            fileInput.value = '';
+            selectedFileDiv.innerHTML = '';
+            showToast('已移除文件', 'success');
+        }
+        
+        // 验证文件类型
+        function validateFileType(file) {
+            if (!allowedTypes[file.type]) {
+                showToast(`不支持的文件类型：${file.name}。请上传支持的文件格式。`, 'error');
+                return false;
+            }
+            return true;
+        }
+        
+        // 拖拽进入事件
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        // 拖拽离开事件
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        // 拖拽释放事件
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            // 获取拖拽的文件
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (validateFileType(file)) {
+                    fileInput.files = e.dataTransfer.files;
+                    showSelectedFile(file);
+                    showToast('文件已选择', 'success');
+                }
+            }
+        });
+        
+        // 文件选择事件
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (validateFileType(file)) {
+                    showSelectedFile(file);
+                } else {
+                    // 清除选择的文件
+                    fileInput.value = '';
+                }
+            } else {
+                // 文件被清除
+                selectedFileDiv.innerHTML = '';
+            }
+        });
+        
+        // 复制链接到剪贴板
+        function copyToClipboard(url) {
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    showToast('链接已复制到剪贴板', 'success');
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    showToast('复制失败，请手动复制', 'error');
+                });
+        }
+    </script>
+</body>
+</html>

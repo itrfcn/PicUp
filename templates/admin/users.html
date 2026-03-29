@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - PicUp图床</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 全局样式 */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #fff;
+            overflow-x: hidden;
+            background-color: #0a0e27;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        /* 容器样式 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 管理卡片 */
+        .admin-card {
+            backdrop-filter: blur(10px);
+            background: rgba(26, 31, 58, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+        
+        /* 标题区域 */
+        .flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .flex p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+        
+        /* 按钮样式 */
+        a.bg-purple-600 {
+            display: inline-block;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+            text-decoration: none;
+        }
+        
+        a.bg-purple-600:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* 错误提示 */
+        .bg-red-100 {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* 表格容器 */
+        .overflow-x-auto {
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(10, 14, 39, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        thead tr {
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        th {
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        tbody tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+        
+        td {
+            padding: 1rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+        }
+        
+        /* 用户信息 */
+        .flex.items-center {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* 垂直排列 */
+        .flex.flex-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* 顶部外边距 */
+        .mt-1 {
+            margin-top: 0.25rem;
+        }
+        
+        .font-medium {
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* 标签样式 */
+        .bg-blue-100, .bg-red-100, .bg-green-100 {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .bg-blue-100 {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+        
+        .bg-red-100 {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+        
+        .bg-green-100 {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+        
+        /* 操作按钮 */
+        .flex.space-x-2 {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 0;
+        }
+        
+        a.bg-orange-600, a.bg-green-600, a.bg-red-600 {
+            padding: 0.375rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        a.bg-orange-600 {
+            background: rgba(251, 146, 60, 0.2);
+            border: 1px solid rgba(251, 146, 60, 0.4);
+            color: #f97316;
+        }
+        
+        a.bg-orange-600:hover {
+            background: rgba(251, 146, 60, 0.3);
+            border-color: rgba(251, 146, 60, 0.6);
+        }
+        
+        a.bg-green-600 {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+        }
+        
+        a.bg-green-600:hover {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: rgba(34, 197, 94, 0.6);
+        }
+        
+        a.bg-red-600 {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+        
+        a.bg-red-600:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+        
+        /* 响应式设计 - 手机适配 */
+        @media (max-width: 768px) {
+            /* 手机模式单独样式 */
+            body {
+                padding: 0.25rem;
+            }
+            
+            .admin-card {
+                padding: 1rem;
+                border-radius: 12px;
+                margin: 0.5rem auto;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            /* 标题区域垂直堆叠 */
+            .flex {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            /* 表格容器确保可滚动 */
+            .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+                border-radius: 8px;
+                overflow: auto;
+            }
+            
+            /* 表格单元格内边距调整 */
+            th, td {
+                padding: 0.75rem 0.75rem;
+                font-size: 0.8rem;
+            }
+            
+            /* 用户信息区域调整 */
+            .flex.items-center {
+                gap: 0.75rem;
+            }
+            
+            /* 按钮样式调整 */
+            a.bg-purple-600 {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+                border-radius: 8px;
+                text-align: center;
+            }
+            
+            /* 按钮容器调整 */
+            div[style="display: flex; gap: 1rem;"] {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            /* 错误提示调整 */
+            .bg-red-100 {
+                padding: 0.75rem;
+                font-size: 0.85rem;
+            }
+            
+            /* 表格行高调整 */
+            tbody tr {
+                min-height: 80px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            /* 表格字体进一步缩小 */
+            th, td {
+                padding: 0.5rem 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            /* 标签样式调整 */
+            .bg-blue-100, .bg-red-100, .bg-green-100 {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.65rem;
+                border-radius: 4px;
+            }
+            
+            /* 用户名区域垂直堆叠 */
+            .flex.items-center {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+            
+            /* 进一步缩小表格内边距 */
+            th:nth-child(4), td:nth-child(4) /* 创建时间 */ {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            /* 操作按钮区域 */
+            .flex.space-x-2 {
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* 操作按钮大小调整 */
+            a.bg-orange-600, a.bg-green-600, a.bg-red-600 {
+                padding: 0.375rem;
+                border-radius: 6px;
+                min-width: 32px;
+                height: 32px;
+            }
+            
+            /* 操作按钮图标大小调整 */
+            a.bg-orange-600 i, a.bg-green-600 i, a.bg-red-600 i {
+                font-size: 0.8rem;
+            }
+            
+            /* 表格单元格进一步缩小 */
+            th, td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.7rem;
+            }
+            
+            /* 操作按钮间距缩小 */
+            .flex.space-x-2 {
+                gap: 0.25rem;
+            }
+            
+            /* 标签样式进一步调整 */
+            .bg-blue-100, .bg-red-100, .bg-green-100 {
+                padding: 0.125rem 0.375rem;
+                font-size: 0.6rem;
+            }
+        }
+
+        /* 删除确认对话框 */
+        #deleteConfirmDialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 对话框容器 */
+        #deleteConfirmDialog .confirm-dialog-container {
+            background: linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(10, 14, 39, 0.95) 100%);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 212, 255, 0.1);
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+            margin: 1rem;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            transition: all 0.3s ease;
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        /* 显示时的动画效果 */
+        #deleteConfirmDialog:not(.hidden) .confirm-dialog-container {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* 只有在显示时才应用flex布局 */
+        #deleteConfirmDialog:not(.hidden) {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* 淡入动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 标题栏 */
+        #deleteConfirmDialog .confirm-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        #deleteConfirmDialog .confirm-dialog-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #deleteConfirmDialog .confirm-dialog-title i {
+            color: #ef4444;
+            font-size: 1.75rem;
+        }
+
+        /* 关闭按钮 */
+        #deleteConfirmDialog #closeDialog {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #deleteConfirmDialog #closeDialog:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 提示信息 */
+        #deleteConfirmDialog .confirm-dialog-message {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        /* 按钮区域 */
+        #deleteConfirmDialog .confirm-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        /* 按钮通用样式 */
+        #deleteConfirmDialog .dialog-btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+
+        /* 取消按钮 */
+        #deleteConfirmDialog #cancelDelete {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #deleteConfirmDialog #cancelDelete:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 删除按钮 */
+        #deleteConfirmDialog #confirmDelete {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        #deleteConfirmDialog #confirmDelete:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 35px rgba(239, 68, 68, 0.4);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 640px) {
+            #deleteConfirmDialog .confirm-dialog-container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+
+            #deleteConfirmDialog .confirm-dialog-actions {
+                flex-direction: column;
+            }
+
+            #deleteConfirmDialog .dialog-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="admin-card">
+            <div class="flex">
+                <div>
+                    <h1>用户管理</h1>
+                    <p>管理所有用户账户</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="{{ url_for('index') }}" class="bg-purple-600">
+                        <i class="fas fa-home mr-2"></i>返回首页
+                    </a>
+                    <a href="{{ url_for('admin_add_user') }}" class="bg-purple-600">
+                        <i class="fas fa-user-plus mr-2"></i>添加用户
+                    </a>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                            <div class="bg-red-100">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <div class="overflow-x-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="flex flex-col">
+                                        <div class="font-medium">{{ user.username }}</div>
+                                        {% if user.id == session['user_id'] %}
+                                            <span class="bg-blue-100 mt-1">当前用户</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if user.is_admin() %}
+                                            <span class="bg-red-100">管理员</span>
+                                        {% else %}
+                                            <span class="bg-green-100">普通用户</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if user.is_active() %}
+                                            <span class="bg-green-100">活跃</span>
+                                        {% else %}
+                                            <span class="bg-red-100">封禁</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ user.created_at | local_time }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="flex space-x-2">
+                                        {% if user.id != session['user_id'] %}
+                                            <a 
+                                                href="{{ url_for('admin_toggle_status', user_id=user.id) }}" 
+                                                class="{% if user.is_active() %}bg-orange-600{% else %}bg-green-600{% endif %}"
+                                                title="{% if user.is_active() %}封禁{% else %}解封{% endif %}用户"
+                                            >
+                                                {% if user.is_active() %}
+                                                    <i class="fas fa-ban"></i>
+                                                {% else %}
+                                                    <i class="fas fa-check-circle"></i>
+                                                {% endif %}
+                                            </a>
+                                            <a 
+                                                href="{{ url_for('admin_delete_user', user_id=user.id) }}" 
+                                                class="bg-red-600"
+                                                title="删除用户"
+                                            >
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认对话框 -->
+    <div id="deleteConfirmDialog" class="hidden">
+        <div class="confirm-dialog-container">
+            <div class="confirm-dialog-header">
+                <h3 class="confirm-dialog-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    确认删除
+                </h3>
+                <button id="closeDialog">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="confirm-dialog-message">
+                确定要删除用户吗？此操作将永久删除用户及其所有上传记录！
+            </div>
+            <div class="confirm-dialog-actions">
+                <button id="cancelDelete" class="dialog-btn">取消</button>
+                <button id="confirmDelete" class="dialog-btn">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 删除确认功能
+        let deleteLink = null;
+        
+        // 显示删除确认对话框
+        function confirmDelete(event) {
+            event.preventDefault();
+            deleteLink = event.currentTarget;
+            document.getElementById('deleteConfirmDialog').classList.remove('hidden');
+            return false;
+        }
+        
+        // 关闭对话框
+        document.getElementById('closeDialog').addEventListener('click', function() {
+            document.getElementById('deleteConfirmDialog').classList.add('hidden');
+            deleteLink = null;
+        });
+        
+        // 取消删除
+        document.getElementById('cancelDelete').addEventListener('click', function() {
+            document.getElementById('deleteConfirmDialog').classList.add('hidden');
+            deleteLink = null;
+        });
+        
+        // 确认删除
+        document.getElementById('confirmDelete').addEventListener('click', function() {
+            if (deleteLink) {
+                window.location.href = deleteLink.href;
+            }
+        });
+        
+        // 为所有删除按钮添加事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('a.bg-red-600');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', confirmDelete);
+            });
+        });
+    </script>
+</body>
+</html>

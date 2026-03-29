@@ -1,0 +1,47 @@
+# 虚拟环境
+.venv/
+env/
+
+# Python编译文件
+*.pyc
+__pycache__/
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 数据库文件
+instance/picup.db
+*.db
+
+# 日志文件
+*.log
+logs/
+
+# IDE配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+temp/
+*.tmp
+
+# 测试相关
+.pytest_cache/
+coverage/
+
+# 部署相关
+.build/
+dist/
+*.egg-info/
+
+# 文件上传目录（如果有）
+uploads/
