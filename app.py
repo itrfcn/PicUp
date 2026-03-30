@@ -323,5 +323,110 @@ def admin_toggle_status(user_id):
     
     return redirect(url_for('admin_users'))
 
+# API: 获取OSS上传密钥
+@app.route('/api/oss-key', methods=['POST'])
+@login_required
+def get_oss_upload_key():
+    try:
+        # 导入上传模块
+        import sys
+        sys.path.append(app.root_path)
+        from free import get_oss_key, get_session_cookie, COOKIE_STRING
+        
+        # 步骤1: 使用配置的remember_student Cookie
+        remember_cookie = COOKIE_STRING.strip()
+        if not remember_cookie:
+            return jsonify({
+                'success': False,
+                'message': 'Cookie未配置'
+            }), 500
+        
+        # 步骤2: 检查是否已经包含s=部分
+        if "s=" in remember_cookie and "remember_student" in remember_cookie:
+            # 已经是完整的cookie字符串
+            cookies = remember_cookie
+        else:
+            # 只包含remember_student部分，需要获取s=部分
+            s_cookie = get_session_cookie(remember_cookie)
+            
+            # 合并两部分cookie
+            if s_cookie:
+                cookies = f"{remember_cookie}; {s_cookie}"
+            else:
+                # 如果获取不到s=部分，仍然使用remember_cookie尝试
+                cookies = remember_cookie
+        
+        # 获取OSS上传密钥
+        oss_config = get_oss_key(cookies)
+        
+        if oss_config:
+            return jsonify({
+                'success': True,
+                'data': oss_config
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '获取上传密钥失败'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# API: 保存上传记录
+@app.route('/api/save-record', methods=['POST'])
+@login_required
+def save_upload_record():
+    try:
+        data = request.get_json()
+        
+        # 验证必要参数
+        if not all(key in data for key in ['name', 'file', 'size', 'type', 'original_filename']):
+            return jsonify({
+                'success': False,
+                'message': f'参数不完整，缺少：{[key for key in ["name", "file", "size", "type", "original_filename"] if key not in data]}'
+            }), 400
+        
+        # 尝试转换数据类型
+        try:
+            file_size = int(data['size']) if data['size'] else 0
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'message': '文件大小格式错误'
+            }), 400
+        
+        # 创建上传记录
+        upload_record = UploadRecord(
+            user_id=session['user_id'],
+            filename=data['name'],
+            original_filename=data['original_filename'],
+            file_url=data['file'],
+            file_size=file_size,
+            file_type=data['type']
+        )
+        
+        db.session.add(upload_record)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '记录保存成功',
+            'data': {
+                'record_id': upload_record.id
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"保存上传记录失败: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'保存记录失败: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)

@@ -209,27 +209,76 @@
             font-family: 'Poppins', sans-serif;
             font-size: 0.95rem;
             font-weight: 600;
-            padding: 0.75rem 1.5rem;
+            padding: 0.65rem 1.35rem;
             border: none;
-            border-radius: 12px;
+            border-radius: 20px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3), 
+                        0 2px 5px rgba(0, 212, 255, 0.2);
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .copy-link-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .copy-link-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
         
         .copy-link-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(0, 212, 255, 0.4);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.5), 
+                        0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+        
+        .copy-link-btn:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+        }
+        
+        .copy-link-btn i {
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .copy-link-btn span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 复制成功状态 */
+        .copy-link-btn.copied {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
         }
         
         /* 响应式设计 */
         @media (max-width: 640px) {
             .copy-link-btn {
-                padding: 0.65rem 1.25rem;
+                padding: 0.55rem 1.15rem;
                 font-size: 0.85rem;
+                gap: 0.35rem;
+            }
+            
+            .copy-link-btn i {
+                font-size: 0.9rem;
             }
         }
         
@@ -246,6 +295,20 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            padding: 0.75rem;
+            background: rgba(26, 31, 58, 0.8);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        
+        .file-info:hover {
+            background: rgba(34, 40, 70, 0.9);
+            transform: translateY(-1px);
+        }
+        
+        .file-info:last-child {
+            margin-bottom: 0;
         }
         
         .file-info-icon {
@@ -385,31 +448,37 @@
             {% if uploaded_file %}
                 <div class="mb-6">
                     <div class="bg-green-100">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <strong>上传成功！文件链接：</strong>
-                            </div>
-                            <button type="button" onclick="copyToClipboard('{{ uploaded_file.url }}')" class="copy-link-btn">
-                                <i class="fas fa-copy"></i>复制链接
-                            </button>
+                        <div class="mb-2">
+                            <strong>上传成功！文件链接：</strong>
                         </div>
-                        <div class="mt-2 p-2 bg-opacity-20 bg-white rounded-md overflow-x-auto">
-                            <a href="{{ uploaded_file.url }}" target="_blank" rel="noopener noreferrer" class="text-blue-300 hover:underline break-all">{{ uploaded_file.url }}</a>
+                        <div class="p-3 bg-opacity-20 bg-white rounded-md">
+                            <a href="{{ uploaded_file.url }}" target="_blank" rel="noopener noreferrer" class="text-blue-300 hover:underline break-all block mb-2">{{ uploaded_file.url }}</a>
+                            <div class="text-right">
+                                <button type="button" onclick="copyToClipboard('{{ uploaded_file.url }}')" class="copy-link-btn">
+                                    <i class="fas fa-copy"></i>复制链接
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             {% endif %}
             
-            <form method="POST" enctype="multipart/form-data">
+            <form id="uploadForm" enctype="multipart/form-data">
                 <div class="mb-6">
                         <label for="file" class="block">选择文件</label>
                         <div class="drop-zone" id="dropZone" onclick="document.getElementById('file').click()">
                             <div>
                             <i class="fas fa-cloud-upload-alt"></i>
                             <p>拖拽文件到此处</p>
+                            <div id="uploadProgress" style="display: none; margin-top: 1rem;">
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div id="progressBar" class="bg-purple-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <div id="progressText" class="text-gray-500 text-sm mt-1 text-center">0%</div>
+                            </div>
                         </div>
                         </div>
-                        <input type="file" id="file" name="file" accept="image/*,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx">
+                        <input type="file" id="file" name="file" accept="image/png,image/jpeg,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx" multiple>
                     </div>
                 
                 <!-- 已选择文件显示区域 -->
@@ -420,7 +489,7 @@
                 </div>
                 
                 <div class="flex justify-between">
-                    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors">
+                    <button type="button" id="uploadBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md transition-colors">
                         <i class="fas fa-upload mr-2"></i>上传文件
                     </button>
                     <button type="button" onclick="window.location.href='{{ url_for('records') }}'" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition-colors">
@@ -441,7 +510,6 @@
         const allowedTypes = {
             'image/png': true,
             'image/jpeg': true,
-            'image/gif': true,
             'text/plain': true,
             'application/msword': true,
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
@@ -498,35 +566,79 @@
             }, 3000);
         }
         
-        // 显示已选择的文件
-        function showSelectedFile(file) {
-            const fileIcon = getFileIcon(file.type);
-            const fileSize = formatFileSize(file.size);
+        // 显示已选择的文件（多个）
+        function showSelectedFiles(files) {
+            let html = '';
             
-            selectedFileDiv.innerHTML = `
-                <div class="file-info">
-                    ${fileIcon}
-                    <div class="file-info-details">
-                        <div class="file-info-name" title="${file.name}">${file.name}</div>
-                        <div class="file-info-size">${fileSize}</div>
+            files.forEach((file, index) => {
+                const fileIcon = getFileIcon(file.type);
+                const fileSize = formatFileSize(file.size);
+                
+                html += `
+                    <div class="file-info" id="file-${index}">
+                        ${fileIcon}
+                        <div class="file-info-details">
+                            <div class="file-info-name" title="${file.name}">${file.name}</div>
+                            <div class="file-info-size">${fileSize}</div>
+                        </div>
+                        <button type="button" class="remove-file-btn" onclick="removeFileAt(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <button type="button" class="remove-file-btn" onclick="removeFile()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
+                `;
+            });
+            
+            selectedFileDiv.innerHTML = html;
         }
         
-        // 移除已选择的文件
-        function removeFile() {
+        // 移除特定索引的文件
+        function removeFileAt(index) {
+            const files = Array.from(fileInput.files);
+            files.splice(index, 1);
+            
+            if (files.length > 0) {
+                fileInput.files = new FileListFromArray(files);
+                showSelectedFiles(files);
+                showToast('已移除文件', 'success');
+            } else {
+                // 所有文件都被移除
+                fileInput.value = '';
+                selectedFileDiv.innerHTML = '';
+                showToast('所有文件已移除', 'success');
+            }
+        }
+        
+        // 移除所有文件
+        function removeAllFiles() {
             fileInput.value = '';
             selectedFileDiv.innerHTML = '';
-            showToast('已移除文件', 'success');
+            showToast('所有文件已移除', 'success');
         }
         
         // 验证文件类型
         function validateFileType(file) {
-            if (!allowedTypes[file.type]) {
+            // 先尝试使用文件的MIME类型
+            let fileType = file.type;
+            
+            // 如果MIME类型不可用或未知，根据扩展名推断
+            if (!fileType || fileType === 'application/octet-stream') {
+                const extension = getFileExtension(file.name);
+                const mimeMap = {
+                    'png': 'image/png',
+                    'jpg': 'image/jpeg',
+                    'jpeg': 'image/jpeg',
+                    'txt': 'text/plain',
+                    'doc': 'application/msword',
+                    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'ppt': 'application/vnd.ms-powerpoint',
+                    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'xls': 'application/vnd.ms-excel',
+                    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                };
+                fileType = mimeMap[extension] || 'application/octet-stream';
+            }
+            
+            if (!allowedTypes[fileType]) {
                 showToast(`不支持的文件类型：${file.name}。请上传支持的文件格式。`, 'error');
                 return false;
             }
@@ -550,25 +662,44 @@
             dropZone.classList.remove('dragover');
             
             // 获取拖拽的文件
-            if (e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                if (validateFileType(file)) {
-                    fileInput.files = e.dataTransfer.files;
-                    showSelectedFile(file);
-                    showToast('文件已选择', 'success');
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                // 验证所有文件
+                const validFiles = files.filter(file => validateFileType(file));
+                
+                if (validFiles.length > 0) {
+                    // 只保留有效的文件
+                    fileInput.files = new FileListFromArray(validFiles);
+                    showSelectedFiles(validFiles);
+                    showToast(`已选择 ${validFiles.length} 个文件`, 'success');
                 }
             }
         });
         
+        // 创建FileList的辅助函数
+        function FileListFromArray(filesArray) {
+            const dataTransfer = new DataTransfer();
+            filesArray.forEach(file => {
+                dataTransfer.items.add(file);
+            });
+            return dataTransfer.files;
+        }
+        
         // 文件选择事件
         fileInput.addEventListener('change', () => {
             if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                if (validateFileType(file)) {
-                    showSelectedFile(file);
+                const files = Array.from(fileInput.files);
+                // 验证所有文件
+                const validFiles = files.filter(file => validateFileType(file));
+                
+                if (validFiles.length > 0) {
+                    // 只保留有效的文件
+                    fileInput.files = new FileListFromArray(validFiles);
+                    showSelectedFiles(validFiles);
                 } else {
                     // 清除选择的文件
                     fileInput.value = '';
+                    selectedFileDiv.innerHTML = '';
                 }
             } else {
                 // 文件被清除
@@ -576,17 +707,347 @@
             }
         });
         
+        // 生成随机文件名
+        function generateRandomFilename(file_extension) {
+            const timestamp = new Date().getTime();
+            const random_str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 10; i++) {
+                result += random_str.charAt(Math.floor(Math.random() * random_str.length));
+            }
+            
+            // 使用SHA-256哈希算法生成文件名
+            const hash_input = timestamp + result;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(hash_input);
+            
+            return crypto.subtle.digest('SHA-256', data).then(hash => {
+                const hashArray = Array.from(new Uint8Array(hash));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                const hash_name = hashHex.slice(0, 19);
+                return hash_name + file_extension;
+            });
+        }
+        
+        // 获取文件扩展名
+        function getFileExtension(filename) {
+            return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
+        }
+        
+        // 获取文件MIME类型
+        function getFileType(file) {
+            if (file.type) {
+                return file.type;
+            }
+            const extension = getFileExtension(file.name);
+            const mimeMap = {
+                'png': 'image/png',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'txt': 'text/plain',
+                'doc': 'application/msword',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'ppt': 'application/vnd.ms-powerpoint',
+                'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'xls': 'application/vnd.ms-excel',
+                'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            };
+            return mimeMap[extension] || 'application/octet-stream';
+        }
+        
+        // 获取OSS上传密钥
+        function getOSSKey() {
+            return fetch('/api/oss-key', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    return data.data;
+                } else {
+                    throw new Error(data.message || '获取上传密钥失败');
+                }
+            });
+        }
+        
+        // 上传文件到OSS
+        function uploadToOSS(ossConfig, file, filename) {
+            const formData = new FormData();
+            
+            // 添加OSS配置参数
+            formData.append('key', ossConfig.dir + '/' + filename);
+            formData.append('OSSAccessKeyId', ossConfig.accessid);
+            formData.append('policy', ossConfig.policy);
+            formData.append('Signature', ossConfig.signature);
+            formData.append('success_action_status', '200');
+            formData.append('callback', ossConfig.callback);
+            
+            // 添加文件
+            formData.append('file', file, filename);
+            
+            // 显示进度条
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            uploadProgress.style.display = 'block';
+            
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                
+                // 监听进度
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                        progressText.textContent = Math.round(percentComplete) + '%';
+                    }
+                };
+                
+                // 监听完成
+                xhr.onload = function() {
+                    // 隐藏进度条
+                    uploadProgress.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    progressText.textContent = '0%';
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            const text = xhr.responseText;
+                            // 尝试解析JSON响应
+                            try {
+                                const responseData = JSON.parse(text);
+                                // 检查是否包含必要的字段
+                                const ossResult = {
+                                    name: responseData.name || responseData.data?.name || filename,
+                                    file: responseData.file || responseData.data?.file || `${ossConfig.host}/${ossConfig.dir}/${filename}`,
+                                    size: responseData.size || responseData.data?.size || file.size,
+                                    type: responseData.type || responseData.data?.type || getFileType(file)
+                                };
+                                resolve(ossResult);
+                            } catch (e) {
+                                // 如果不是JSON，返回基本信息
+                                resolve({
+                                    name: filename,
+                                    file: `${ossConfig.host}/${ossConfig.dir}/${filename}`,
+                                    size: file.size,
+                                    type: getFileType(file)
+                                });
+                            }
+                        } catch (e) {
+                            reject(new Error('解析响应失败'));
+                        }
+                    } else {
+                        reject(new Error('文件上传失败'));
+                    }
+                };
+                
+                // 监听错误
+                xhr.onerror = function() {
+                    // 隐藏进度条
+                    uploadProgress.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    progressText.textContent = '0%';
+                    reject(new Error('网络错误'));
+                };
+                
+                // 发送请求
+                xhr.open('POST', ossConfig.host);
+                xhr.send(formData);
+            });
+        }
+        
+        // 保存上传记录
+        function saveUploadRecord(ossResult, originalFilename) {
+            return fetch('/api/save-record', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: ossResult.name,
+                    file: ossResult.file,
+                    size: ossResult.size,
+                    type: ossResult.type,
+                    original_filename: originalFilename
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    return ossResult;
+                } else {
+                    throw new Error(data.message || '保存上传记录失败');
+                }
+            });
+        }
+        
         // 复制链接到剪贴板
         function copyToClipboard(url) {
+            // 获取当前点击的按钮（如果有）
+            const event = window.event;
+            const button = event ? event.target.closest('.copy-link-btn') : null;
+            
+            // 临时修改按钮样式和文本
+            if (button) {
+                button.classList.add('copied');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>已复制';
+            }
+            
             navigator.clipboard.writeText(url)
                 .then(() => {
                     showToast('链接已复制到剪贴板', 'success');
+                    
+                    // 恢复按钮原始状态
+                    if (button) {
+                        setTimeout(() => {
+                            button.classList.remove('copied');
+                            button.innerHTML = originalText;
+                        }, 1500);
+                    }
                 })
                 .catch(err => {
                     console.error('复制失败:', err);
                     showToast('复制失败，请手动复制', 'error');
+                    
+                    // 恢复按钮原始状态
+                    if (button) {
+                        button.classList.remove('copied');
+                    }
                 });
         }
+        
+        // 直传功能
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const files = Array.from(document.getElementById('file').files);
+            
+            if (files.length === 0) {
+                showToast('请先选择文件', 'error');
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            const originalText = uploadBtn.innerHTML;
+            
+            // 禁用上传按钮
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>上传中...';
+            
+            let successCount = 0;
+            let failureCount = 0;
+            const results = [];
+            
+            // 显示进度条容器
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            uploadProgress.style.display = 'block';
+            
+            try {
+                // 获取OSS上传密钥（只需要获取一次）
+                showToast('正在获取上传凭证...', 'success');
+                const ossConfig = await getOSSKey();
+                
+                // 逐个上传文件
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileIndex = i + 1;
+                    
+                    // 更新进度信息
+                    progressText.textContent = `正在上传第 ${fileIndex} 个文件（共 ${files.length} 个）...`;
+                    
+                    try {
+                        // 获取文件扩展名
+                        const extension = '.' + getFileExtension(file.name).toLowerCase();
+                        
+                        // 生成随机文件名
+                        const randomFilename = await generateRandomFilename(extension);
+                        
+                        // 上传文件到OSS
+                        const ossResult = await uploadToOSS(ossConfig, file, randomFilename);
+                        
+                        // 保存上传记录
+                        const finalResult = await saveUploadRecord(ossResult, file.name);
+                        
+                        results.push(ossResult);
+                        successCount++;
+                        
+                        // 更新进度条
+                        const progress = ((i + 1) / files.length) * 100;
+                        progressBar.style.width = progress + '%';
+                        
+                    } catch (fileError) {
+                        console.error(`上传第 ${fileIndex} 个文件失败:`, fileError);
+                        showToast(`上传文件 ${file.name} 失败: ${fileError.message}`, 'error');
+                        failureCount++;
+                    }
+                }
+                
+                // 隐藏进度条
+                uploadProgress.style.display = 'none';
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+                
+                // 显示上传结果
+                if (successCount > 0) {
+                    showToast(`上传完成！成功 ${successCount} 个，失败 ${failureCount} 个`, 'success');
+                    
+                    // 动态显示上传结果
+                    const container = document.createElement('div');
+                    container.className = 'mb-6';
+                    
+                    let resultsHtml = '';
+                    results.forEach((ossResult, index) => {
+                        resultsHtml += `
+                            <div class="mt-2 p-3 bg-opacity-20 bg-white rounded-md">
+                                <a href="${ossResult.file}" target="_blank" rel="noopener noreferrer" class="text-blue-300 hover:underline break-all block mb-2">${ossResult.file}</a>
+                                <div class="text-right">
+                                    <button type="button" onclick="copyToClipboard('${ossResult.file}')" class="copy-link-btn">
+                                        <i class="fas fa-copy"></i>复制
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    container.innerHTML = `
+                        <div class="bg-green-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <strong>上传成功！共 ${successCount} 个文件：</strong>
+                                </div>
+                            </div>
+                            ${resultsHtml}
+                        </div>
+                    `;
+                    
+                    // 将结果插入到表单上方
+                    const form = document.getElementById('uploadForm');
+                    form.parentNode.insertBefore(container, form);
+                    
+                    // 清空已选择的文件
+                    document.getElementById('file').value = '';
+                    document.getElementById('selectedFile').innerHTML = '';
+                }
+                
+            } catch (error) {
+                console.error('上传失败:', error);
+                showToast('上传失败: ' + error.message, 'error');
+                
+                // 隐藏进度条
+                uploadProgress.style.display = 'none';
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+            } finally {
+                // 恢复上传按钮
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = originalText;
+            }
+        });
     </script>
 </body>
 </html>
